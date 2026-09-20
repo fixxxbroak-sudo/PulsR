@@ -9,6 +9,9 @@ import { connectDB } from './config/db';
 import { User } from './models/User';
 import { Message } from './models/Message';
 import { authMiddleware, AuthRequest } from './middleware/authMiddleware';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 
 dotenv.config();
 
@@ -395,3 +398,10 @@ server.listen(PORT, () => {
 
 }); 
 
+const frontendDistPath = path.join(__dirname, 'client/dist');
+app.use(express.static(frontendDistPath));
+
+// Эта строка нужна, чтобы роутинг в твоем .tsx приложении работал корректно
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
+});

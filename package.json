@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node dist/index.ts"
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
+    "start": "tsx src/index.ts"
   },
   "keywords": [],
   "author": "",
