@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "build": "cd client && npm install && npm run build && cd .. && npm install && npx tsc",
-    "start": "node dist/index.js"
+    "build": "cd client && npm install && npm run build",
+    "start": "npx tsx src/index.ts"
   },
   "keywords": [],
   "author": "",
