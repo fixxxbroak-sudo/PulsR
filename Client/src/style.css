@@ -1,0 +1,125 @@
+/* 1. ТЕМНАЯ ТЕМА ПО УМОЛЧАНИЮ */
+:root {
+    --bg-color: #24262a;
+    --card-bg: #555961;
+    --text-color: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-color: #5f60ad;
+    --accent-color-active: #8889E5;
+}
+
+/* 2. Принудительная светлая тема (если пользователь её выберет) */
+body.light-theme {
+    --bg-color: #C7D5FF;
+    --card-bg: #9EACCA;
+    --text-color: #ffffff;
+    --text-muted: #64748b;
+    --accent-color: #4648b3;
+    --accent-color-active: #5254d4;
+}
+
+/* Применяем переменные */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: Comfortaa, 'Martian Mono', monospace;
+    display: flex;
+    justify-content: center;
+    height: 80vh; /* Добавляем отступ снизу, чтобы кнопка не прилипала к низу */
+    overflow: hidden; /* Жестко запрещает любую прокрутку страницы */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 5px;
+    padding: 5px;
+input, button, textarea, select {
+    font-family: 'Martian Mono';
+}
+
+
+}
+.container {
+    display: flex;
+    justify-content: center;
+    height: 30%;
+    margin: 10vh;
+}
+.my-image {
+/* Запрещаем картинке быть шире её оригинала */
+    max-width: 100%;
+
+    /* Разрешаем браузеру автоматически подбирать высоту, чтобы сохранить пропорции */
+    height: auto;
+
+    /* Блочное поведение, чтобы картинка не висела в строке с артефактами */
+    display: block;
+}
+#loginForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.login, .password, .email {
+    font-size: 2vh ;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 15px;
+    width: 75vw;
+    max-width: 800px;
+    height: 3vh;
+    padding: 10px;
+    margin: 20px;
+    border: none;
+    transition: transform 0.3s ease;
+}
+.login:focus, .password:focus, .email:focus {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+}
+.login-button {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    border-radius: 15px;
+    width: auto;
+    padding: 20px 20px;
+    max-width: 800px;
+    height: 7vh;
+    max-height: 100px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin: 10vh;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    text-align: center;
+    font-size: 2vh;
+}
+.login-button:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+}
+.login-button:active {
+    background-color: var(--accent-color-active);
+    transition: background-color 0.1s ease;
+}
+.theme {
+    background-color: #00000000;
+    border: none;
+    position: absolute;
+    bottom: 5vh;
+    right: 5vw;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.theme img {
+    width: 5vw;
+    min-width: 90px;
+    height: auto;
+}
+.switch-text {
+    font-size: 1.5vh;
+    color: var(--text-muted);
+    margin-top: 10px;
+}
