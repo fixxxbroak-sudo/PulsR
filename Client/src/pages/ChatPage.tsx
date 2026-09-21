@@ -1,99 +1,169 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useSocket } from '../context/SocketContext';
+import React, { useState, useEffect, useRef } from 'react';
+import { Socket } from 'socket.io-client';
 
-export const ChatPage: React.FC = () => {
-  const { user, logout } = useAuth();
-  const { messages, sendMessage } = useSocket();
-  const [text, setText] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+const ChatPage: React.FC = () => {
+  interface Message {
+    _id: string;
+    sender: {
+      _id: string;
+      username: string;
+      avatarUrl?: string;
+    };
+    recipient: string;
+    text: string;
+    createdAt?: string;
+  }
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!text.trim()) return;
-    sendMessage(text);
-    setText('');
-  };
+  interface ChatProps {
+    currentUserId: string;
+    recipientId: string;
+    recipientName: string;
+    recipientAvatar?: string;
+    socket: Socket;
+    conversations?: Array<{ id: string; name: string; avatar?: string }>;
+    onSelectConversation?: (id: string) => void;
+  }
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const Messenger: React.FC<ChatProps> = ({
+    currentUserId,
+    recipientId,
+    recipientName,
+    recipientAvatar,
+    socket,
+    conversations = [],
+    onSelectConversation,
+  }) => {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [inputText, setInputText] = useState('');
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
-      {/* Боковая панель */}
-      <div className="w-80 bg-slate-900 border-r border-slate-800 flex flex-col">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <span className="font-bold text-lg text-indigo-400">Pulsr Chat</span>
-          <button
-            onClick={logout}
-            className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition"
-          >
-            Выйти
-          </button>
+    useEffect(() => {
+      // Регистрируем юзера в сокетах
+      socket.emit('register_user', currentUserId);
+
+      const handleReceiveMessage = (message: Message) => {
+        if (
+          message.sender._id === recipientId ||
+          message.sender._id === currentUserId
+        ) {
+          setMessages((prev) => [...prev, message]);
+        }
+      };
+
+      const handleMessageSent = (message: Message) => {
+        setMessages((prev) => [...prev, message]);
+      };
+
+      socket.on('receive_message', handleReceiveMessage);
+      socket.on('message_sent', handleMessageSent);
+
+      return () => {
+        socket.off('receive_message', handleReceiveMessage);
+        socket.off('message_sent', handleMessageSent);
+      };
+    }, [socket, currentUserId, recipientId]);
+
+    useEffect(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const sendMessage = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!inputText.trim()) return;
+
+      socket.emit('send_message', {
+        senderId: currentUserId,
+        recipientId,
+        text: inputText,
+      });
+
+      setInputText('');
+    };
+
+    return (
+      <div className="flex h-screen bg-[#1e2229] text-white font-sans overflow-hidden">
+        {/* Левая панель с аватарами/чатами */}
+        <div className="w-20 bg-[#16191f] flex flex-col items-center py-6 space-y-4 border-r border-[#2a2f38]">
+          {/* Логотип или главная кнопка */}
+          <div className="w-12 h-12 rounded-full bg-[#2a2f38] flex items-center justify-center text-blue-400 font-bold mb-4 cursor-pointer">
+            P
+          </div>
+
+          {/* Список аватаров чатов из макета */}
+          {conversations.map((conv) => (
+            <div
+              key={conv.id}
+              onClick={() => onSelectConversation?.(conv.id)}
+              className="w-12 h-12 rounded-full bg-[#363b46] hover:bg-blue-600 transition cursor-pointer flex items-center justify-center overflow-hidden"
+            >
+              {conv.avatar ? (
+                <img src={conv.avatar} alt={conv.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-semibold">{conv.name[0]}</span>
+              )}
+            </div>
+          ))}
         </div>
-        <div className="p-4 flex-1 overflow-y-auto">
-          <div className="text-xs font-semibold text-slate-500 uppercase mb-2">Профиль</div>
-          <div className="flex items-center space-x-3 p-2 bg-slate-950 rounded-xl border border-slate-800/60">
-            <div className="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold">
-              {user?.username?.[0]?.toUpperCase()}
+
+        {/* Основная область чата */}
+        <div className="flex-1 flex flex-col">
+          {/* Шапка профиля / чата */}
+          <div className="h-20 bg-[#1e2229] border-b border-[#2a2f38] flex items-center px-8 space-x-4">
+            <div className="w-10 h-10 rounded-full bg-[#363b46] overflow-hidden flex items-center justify-center">
+              {recipientAvatar ? (
+                <img src={recipientAvatar} alt={recipientName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-bold">{recipientName?.[0] || 'U'}</span>
+              )}
             </div>
-            <div>
-              <div className="font-medium text-sm text-slate-200">{user?.username}</div>
-              <div className="text-xs text-emerald-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                В сети
-              </div>
-            </div>
+            <span className="text-lg font-medium tracking-wide">{recipientName || 'Имя пользователя'}</span>
+          </div>
+
+          {/* Область сообщений */}
+          <div className="flex-1 overflow-y-auto p-8 space-y-6">
+            {messages.map((msg) => {
+              const isMe = msg.sender._id === currentUserId;
+              return (
+                <div
+                  key={msg._id}
+                  className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[45%] px-5 py-3.5 rounded-2xl text-sm ${
+                      isMe
+                        ? 'bg-[#d9d9d9] text-black rounded-br-none'
+                        : 'bg-[#d9d9d9] text-black rounded-bl-none'
+                    }`}
+                  >
+                    <p>{msg.text}</p>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Инпут отправки сообщения */}
+          <div className="p-6 bg-[#1e2229]">
+            <form onSubmit={sendMessage} className="flex gap-4">
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Введите сообщение..."
+                className="flex-1 bg-[#2a2f38] text-white placeholder-gray-400 px-6 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 transition px-8 py-3.5 rounded-xl font-medium"
+              >
+                Отправить
+              </button>
+            </form>
           </div>
         </div>
       </div>
-
-      {/* Основная область чата */}
-      <div className="flex-1 flex flex-col bg-slate-950">
-        {/* Шапка чата */}
-        <div className="h-16 border-b border-slate-800 px-6 flex items-center bg-slate-900/50 backdrop-blur">
-          <h3 className="font-semibold text-slate-200">Общий чат</h3>
-        </div>
-
-        {/* Список сообщений */}
-        <div className="flex-1 p-6 overflow-y-auto space-y-4">
-          {messages.map((msg, idx) => {
-            const isMe = typeof msg.sender === 'object' 
-              ? msg.sender.id === user?.id 
-              : false; // Зависит от того, как бэкенд возвращает sender
-
-            return (
-              <div key={msg.id || idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                <div className="max-w-[70%] bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 shadow-sm">
-                  <div className="text-xs text-indigo-400 font-medium mb-1">
-                    {typeof msg.sender === 'object' ? msg.sender.username : 'Пользователь'}
-                  </div>
-                  <p className="text-sm text-slate-200 break-words">{msg.content}</p>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Форма отправки сообщения */}
-        <form onSubmit={handleSend} className="p-4 bg-slate-900 border-t border-slate-800 flex gap-3">
-          <input
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Написать сообщение..."
-            className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-indigo-500 transition"
-          />
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-3 rounded-xl transition shadow-lg shadow-indigo-600/20"
-          >
-            Отправить
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+    );
+  };
 };
+export default ChatPage;
